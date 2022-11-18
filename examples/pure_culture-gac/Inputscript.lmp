@@ -23,6 +23,7 @@ read_data       atom.in	            # read atom.in file which defines box size
 
 group           het   type 1               # assign type 1 atoms to het group
 group           eps   type 2               # assign type 2 atoms to eps group
+group           gac   type 3               # assign type 3 atoms to gac group
 
 neighbor        5e-7 bin                   # setting neighbour skin distance and style
 neigh_modify    check yes                  # rebuild neighbour list if any atom
@@ -36,6 +37,14 @@ grid_modify     set sub  pp pp nd  1e-4 1e-4
 grid_modify     set co2  pp pp nd  1e-4 1e-4
 grid_modify     set no2  pp pp nd  1e-4 1e-4
 grid_modify     set no3  pp pp nd  1e-4 1e-4
+
+# 1st attempt at creating a region
+#region ID style args keyword arg ... dim c1 c2 radlo radhi lo hi
+region funnel cone z 0.5e-4 0.2e-4 0.1e-4 0.5e-5 0 0.2e-4 side in units box
+create_atoms 3 random 10000 13 funnel
+
+
+
 
 
 #------------------------------------------Biological processes------------------------------------------#
