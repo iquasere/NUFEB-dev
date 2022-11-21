@@ -18,7 +18,7 @@ atom_modify     map array sort 1000 1e-6    # map array: find atoms using indice
 		                            
 boundary        pp pp ff		    # periodic domain boundaries in x and y fixed boundary in z
 
-read_data       atom.in	            # read atom.in file which defines box size
+#read_data       atom.in	            # read atom.in file which defines box size
                                            # and initial atoms	                
 
 group           het   type 1               # assign type 1 atoms to het group
@@ -38,11 +38,13 @@ grid_modify     set co2  pp pp nd  1e-4 1e-4
 grid_modify     set no2  pp pp nd  1e-4 1e-4
 grid_modify     set no3  pp pp nd  1e-4 1e-4
 
-# 1st attempt at creating a region
-#region ID style args keyword arg ... dim c1 c2 radlo radhi lo hi
+#region ID style dim c1 c2 radlo radhi lo hi
 region funnel cone z 0.5e-4 0.2e-4 0.1e-4 0.5e-5 0 0.2e-4 side in units box
-create_atoms 3 random 10000 13 funnel
+create_atoms 3 random 1000 13 funnel
 
+# specify the same funnel region where atoms other than gac are put outside
+region funnel2 cone z 0.5e-4 0.2e-4 0.1e-4 0.5e-5 0 0.2e-4 side out units box
+create_atoms 1 random 100 31324 funnel2
 
 
 
