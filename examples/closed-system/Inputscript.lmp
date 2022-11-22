@@ -91,7 +91,6 @@ variable press equal "(c_ke + c_press) / (3.0 * c_vol)"
 variable mass equal "mass(all)"
 
 # file output
-#
 shell mkdir vtk
 dump 1 all vtk 1 vtk/dump*.vtu id type radius
 dump 2 all grid/vtk 1 vtk/dump_%_*.vti con

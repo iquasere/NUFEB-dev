@@ -109,4 +109,3 @@ timestep 1000
 
 # run 900 biological steps (9x10^5 seconds)
 run 900
-
