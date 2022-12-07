@@ -1,21 +1,24 @@
-# NUFEB simulation with HETs and AOBs
+# NUFEB simulation with methanogens and GAC floor
 
-units si                                   # using si units
+units si                                   	# using si units
 atom_style      coccus                      # using nufeb atom style
-atom_modify     map array sort 1000 1e-6   # map array: find atoms using indices
-		                           # sort 1000 5.0e-6: sort every 1000
-					   #   steps with 5.0e-6 binsize
-boundary        pp pp ff                   # periodic boundaries in x and y
-                                           #   fixed boundary in z
-newton          off                        # forces between local and ghost
-                                           #   atoms are computed in each
-					   #   processor without communication
+
+# map array: find atoms using indices sort 1000 5.0e-6: sort every 1000 steps with 5.0e-6 binsize
+atom_modify     map array sort 1000 1e-6
+
+# periodic boundaries in x and y fixed boundary in z
+boundary        pp pp ff
+
+# forces between local and ghost atoms are computed in each processor without communication
+newton          off
+
 #processors      4 4 1                      # processor grid
 
-comm_modify     vel yes                    # communicate velocities for ghost
-                                           # atoms
-comm_modify     cutoff 2e-6                # guarantee that enough atoms are
-                                           # communicated to correctly compute
+# communicate velocities for ghost atoms
+comm_modify     vel yes
+
+# guarantee that enough atoms are communicated to correctly compute
+comm_modify     cutoff 2e-6
 
 read_data      gac_pure_culture.in
 
@@ -43,7 +46,7 @@ set type 3 outer_diameter 1e-6
 set type 3 outer_density 30
 
 # set the groups
-group het type 1
+group met type 1
 group eps type 2
 group non-gac type 1 2
 group gac type 3
@@ -55,7 +58,7 @@ neighbor        7e-7 bin
 neigh_modify    check yes
 
 # select grid style
-grid_style      nufeb/chemostat 4 sub o2 no2 no3 2e-6
+grid_style      nufeb/chemostat 3 sub co2 ch4 2e-6
 
 # test grid comm
 #run_style       test/comm_grid
@@ -63,9 +66,8 @@ grid_style      nufeb/chemostat 4 sub o2 no2 no3 2e-6
 
 # set substrates initial concentration
 grid_modify     set sub   nn nn nn 50 50
-grid_modify     set o2    nn nn nd 1e-4 1e-4
-grid_modify     set no2   nn nn nd 1e-4 1e-4
-grid_modify     set no3   nn nn nd 1e-4 1e-4
+grid_modify     set co2   nn nn nd 1e-4 1e-4
+grid_modify     set ch4   nn nn nd 0 0
 
 # define pair style
 pair_style  gran/hooke/history 1e-4 NULL 1e-5 NULL 0.0 1
@@ -77,23 +79,21 @@ fix nve non-gac nve/limit 1e-8
 
 # monod reaction fixes
 #   should consider using read_data's fix keyword
-fix monod_het het nufeb/growth/het sub 4e-3 o2 2e-4 no2 0 no3 0 growth 0.000069444 yield 0.63 decay 0 epsyield 0 anoxic 0 epsdens 30
+fix monod_met met nufeb/growth/methanogen sub 4e-3 co2 2e-4 ch4 2e-4 growth 0.000069444 yield 0.63 decay 0 epsyield 0 epsdens 30
 fix monod_eps eps nufeb/growth/eps sub decay 0
 
 # diffusion reaction fixes
 fix diff_sub all nufeb/diffusion_reaction sub 1.1574e-9
-fix diff_o2 all nufeb/diffusion_reaction o2 2.3148e-9
+fix diff_co2 all nufeb/diffusion_reaction co2 2.3148e-9
 
 # biological model fixes
-# apply division to het only
-fix div het nufeb/division/coccus 1.36e-6 30 1234
-fix eps_ext het nufeb/eps_extract 2 eps 1.3 30 5678
+# apply division to met only
+fix div met nufeb/division/coccus 1.36e-6 30 1234
+fix eps_ext met nufeb/eps_extract 2 eps 1.3 30 5678
 
 # mechanical model fixes
 fix wall all wall/gran hooke/history 1e-3 NULL 1e-4 NULL 0 0 zplane 0.0 8e-5
-#fix_modify wall virial yes
 fix eps_adh all nufeb/adhesion/eps eps 1e6
-#fix_modify eps_adh virial yes
 fix vis all viscous 1e-5
 
 # pressure computation
@@ -104,11 +104,10 @@ compute press all pressure NULL pair vol v_one
 variable press equal "(c_ke + c_press) / (3.0 * c_vol)"
 variable mass equal "mass(all)"
 
-#velocity all zero linear
-
 # file output
-dump 1 all vtk 1 vtk/dump*.vtu id type diameter
-dump 2 all grid/vtk 1 vtk/dump_%_*.vti con
+shell mkdir vtk_gac_sheet
+dump 1 all vtk 1 vtk_gac_sheet/dump*.vtu id type diameter
+dump 2 all grid/vtk 1 vtk_gac_sheet/dump_%_*.vti con
 
 # thermo output
 thermo_style custom step atoms v_press v_mass
