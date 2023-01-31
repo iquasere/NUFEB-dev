@@ -33,13 +33,14 @@ namespace LAMMPS_NS {
         virtual void update_cells();
 
     protected:
-        int isub;
+        int ih2;
         int ico2;
         int ich4;
+        int igco2;
+        int gco2_flag;
 
-        double sub_affinity;
+        double h2_affinity;
         double co2_affinity;
-        double ch4_affinity;
 
         double growth;
         double yield;
