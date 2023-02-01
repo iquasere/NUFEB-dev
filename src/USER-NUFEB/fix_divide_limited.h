@@ -22,7 +22,6 @@ FixStyle(nufeb/division/limited,FixDivideLimited)
 
 #include "fix_divide.h"
 
-bool isSphereInsideFloorRegion(double sphere_z, double sphere_radius, double extent_zhi);
 double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double extent_zhi);
 bool isSphereInsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius);
 void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius);

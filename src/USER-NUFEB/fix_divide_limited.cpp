@@ -11,6 +11,8 @@
  See the README file in the top-level LAMMPS directory.
  ------------------------------------------------------------------------- */
 
+#include <iostream>
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,12 +39,8 @@ using namespace MathConst;
 
 /* -------------------------Helper functions------------------------------ */
 
-bool isSphereInsideFloorRegion(double sphere_z, double sphere_radius, double extent_zhi) {
-  return sphere_z + sphere_radius <= extent_zhi;
-}
-
 double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double extent_zhi) {
-  if (sphere_z + sphere_radius <= extent_zhi) {
+  if (sphere_z - sphere_radius <= extent_zhi) {
     sphere_z = extent_zhi + sphere_radius;
   }
   return sphere_z;
@@ -131,10 +129,16 @@ void FixDivideLimited::compute()
         double newy = oldy + (atom->radius[i] * sin(theta) * sin(phi) * DELTA);
         double newz = oldz + (atom->radius[i] * cos(phi) * DELTA);
 
+        double sphere_coord[3] = {newx, newy, newz};
         double floor_zhi = domain->regions[nregion]->extent_zhi;
+
         if (nregion != -1) {
-          if (isSphereInsideFloorRegion(newz, atom->radius[i], floor_zhi)) {
-            newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
+          newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
+        }
+
+        if (nregion != -1) {
+          if (isSphereInsideSinusoidalRegion(&sphere_coord, atom->radius[i])) {
+            putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
           }
         }
 
@@ -180,7 +184,14 @@ void FixDivideLimited::compute()
           newz = domain->boxhi[2] - jradius;
         }
 
-        double sphere_coord[3] = {newx, newy, newz};
+        sphere_coord[0] = newx;
+        sphere_coord[1] = newy;
+        sphere_coord[2] = newz;
+
+        if (nregion != -1) {
+          newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
+        }
+
         if (nregion != -1) {
           if (isSphereInsideSinusoidalRegion(&sphere_coord, atom->radius[i])) {
             putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
