@@ -50,7 +50,7 @@ double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double
 }
 
 void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius) {
-  std::cout << "x=" << sphere_coord[0] << " y=" << sphere_coord[1] << " z=" << sphere_coord[2] << std::endl;
+  std::cout << "x=" << (*sphere_coord)[0] << " y=" << (*sphere_coord)[1] << " z=" << (*sphere_coord)[2] << std::endl;
   double surface_z = sin(sin(5e5 * (*sphere_coord)[0])) * sin(cos(5e5 * (*sphere_coord)[1])) / 10e4;
   std::cout << "surface_z=" << surface_z << " sphere_radius=" << sphere_radius << std::endl;
   if ((*sphere_coord)[2] - sphere_radius < surface_z) {
@@ -83,35 +83,35 @@ FixDivideLimited::FixDivideLimited(LAMMPS *lmp, int narg, char **arg) :
       domain->regions[nregion]->init();
       domain->regions[nregion]->prematch();
       iarg += 2;
-  } else if (strcmp(arg[iarg], "var") == 0) {
-    if (iarg+2 > narg) error->all(FLERR,"Illegal fix nufeb/division/limited command");
-    delete [] vstr;
-    int n = strlen(arg[iarg+1]) + 1;
-    vstr = new char[n];
-    strcpy(vstr,arg[iarg+1]);
-    varflag = 1;
-    iarg += 2;
-  } else if (strcmp(arg[iarg],"set") == 0) {
-    if (iarg+3 > narg) error->all(FLERR,"Illegal create_atoms command");
-    if (strcmp(arg[iarg+1],"x") == 0) {
-      delete [] xstr;
-      int n = strlen(arg[iarg+2]) + 1;
-      xstr = new char[n];
-      strcpy(xstr,arg[iarg+2]);
-    } else if (strcmp(arg[iarg+1],"y") == 0) {
-      delete [] ystr;
-      int n = strlen(arg[iarg+2]) + 1;
-      ystr = new char[n];
-      strcpy(ystr,arg[iarg+2]);
-    } else if (strcmp(arg[iarg+1],"z") == 0) {
-      delete [] zstr;
-      int n = strlen(arg[iarg+2]) + 1;
-      zstr = new char[n];
-      strcpy(zstr,arg[iarg+2]);
-    } else error->all(FLERR,"Illegal create_atoms command");
-    iarg += 3;
+    } else if (strcmp(arg[iarg], "var") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix nufeb/division/limited command");
+      delete [] vstr;
+      int n = strlen(arg[iarg+1]) + 1;
+      vstr = new char[n];
+      strcpy(vstr,arg[iarg+1]);
+      varflag = 1;
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"set") == 0) {
+      if (iarg+3 > narg) error->all(FLERR,"Illegal create_atoms command");
+      if (strcmp(arg[iarg+1],"x") == 0) {
+        delete [] xstr;
+        int n = strlen(arg[iarg+2]) + 1;
+        xstr = new char[n];
+        strcpy(xstr,arg[iarg+2]);
+      } else if (strcmp(arg[iarg+1],"y") == 0) {
+        delete [] ystr;
+        int n = strlen(arg[iarg+2]) + 1;
+        ystr = new char[n];
+        strcpy(ystr,arg[iarg+2]);
+      } else if (strcmp(arg[iarg+1],"z") == 0) {
+        delete [] zstr;
+        int n = strlen(arg[iarg+2]) + 1;
+        zstr = new char[n];
+        strcpy(zstr,arg[iarg+2]);
+      } else error->all(FLERR,"Illegal create_atoms command");
+      iarg += 3;
     } else {
-    error->all(FLERR, "Illegal fix nufeb/division/limited command");
+      error->all(FLERR, "Illegal fix nufeb/division/limited command");
     }
   }
 
@@ -172,9 +172,8 @@ void FixDivideLimited::compute()
   for (int i = 0; i < nlocal; i++) {
     if (atom->mask[i] & groupbit) {
       if (atom->radius[i] * 2 >= diameter) {    // atom will divide
-        std::cout << "Going to divide";
         double density = atom->rmass[i] / (     // mass
-          4.0 * MY_PI / 3.0 * atom->radius[i] * atom->radius[i] * atom->radius[i]); // volume
+            4.0 * MY_PI / 3.0 * atom->radius[i] * atom->radius[i] * atom->radius[i]); // volume
 
         double split = 0.4 + (random->uniform() * 0.2);
         double imass = atom->rmass[i] * split;
@@ -200,14 +199,12 @@ void FixDivideLimited::compute()
         double newy = oldy + (atom->radius[i] * sin(theta) * sin(phi) * DELTA);
         double newz = oldz + (atom->radius[i] * cos(phi) * DELTA);
 
-        std::cout << "Got before my stuff";
         double sphere_coord[3] = {newx, newy, newz};
-        double floor_zhi = domain->regions[nregion]->extent_zhi;
 
         if (nregion != -1) {
+          double floor_zhi = domain->regions[nregion]->extent_zhi;
           newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
         }
-        std::cout << "And got before calling vvar the first time";
         std::cout << "varflag=" << varflag << "vvar=" << vvar << std::endl;
         if (varflag) {
           putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
@@ -260,10 +257,10 @@ void FixDivideLimited::compute()
         sphere_coord[2] = newz;
 
         if (nregion != -1) {
+          double floor_zhi = domain->regions[nregion]->extent_zhi;
           newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
         }
 
-        std::cout << "varflag=" << varflag << "vvar=" << vvar << std::endl;
         if (varflag) {
           putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
         }
@@ -301,22 +298,22 @@ void FixDivideLimited::compute()
           modify->fix[m]->update_arrays(i, j);
 
         delete[] coord;
-        }
       }
     }
-
-    bigint nblocal = atom->nlocal;
-    MPI_Allreduce(&nblocal, &atom->natoms, 1, MPI_LMP_BIGINT, MPI_SUM, world);
-    if (atom->natoms < 0 || atom->natoms >= MAXBIGINT)
-      error->all(FLERR, "Too many total atoms");
-
-    if (atom->tag_enable)
-      atom->tag_extend();
-    atom->tag_check();
-
-    if (atom->map_style) {
-      atom->nghost = 0;
-      atom->map_init();
-      atom->map_set();
-    }
   }
+
+  bigint nblocal = atom->nlocal;
+  MPI_Allreduce(&nblocal, &atom->natoms, 1, MPI_LMP_BIGINT, MPI_SUM, world);
+  if (atom->natoms < 0 || atom->natoms >= MAXBIGINT)
+    error->all(FLERR, "Too many total atoms");
+
+  if (atom->tag_enable)
+    atom->tag_extend();
+  atom->tag_check();
+
+  if (atom->map_style) {
+    atom->nghost = 0;
+    atom->map_init();
+    atom->map_set();
+  }
+}
