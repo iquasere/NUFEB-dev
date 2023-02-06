@@ -30,6 +30,9 @@
 #include "lammps.h"
 #include "region.h"
 #include "fix_divide_limited.h"
+#include "input.h"
+#include "variable.h"
+
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -46,14 +49,15 @@ double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double
   return sphere_z;
 }
 
-bool isSphereInsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius) {
-  double surface_z = sin(sin(5e5 * (*sphere_coord)[0])) * sin(cos(5e5 * (*sphere_coord)[1])) / 10e4;
-  return (*sphere_coord)[2] - sphere_radius < surface_z;
-}
-
 void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius) {
+  std::cout << "x=" << sphere_coord[0] << " y=" << sphere_coord[1] << " z=" << sphere_coord[2] << std::endl;
   double surface_z = sin(sin(5e5 * (*sphere_coord)[0])) * sin(cos(5e5 * (*sphere_coord)[1])) / 10e4;
-  (*sphere_coord)[2] = surface_z + sphere_radius;
+  std::cout << "surface_z=" << surface_z << " sphere_radius=" << sphere_radius << std::endl;
+  if ((*sphere_coord)[2] - sphere_radius < surface_z) {
+    std::cout << "putting sphere outside sinusoidal region" << std::endl;
+    (*sphere_coord)[2] = surface_z + sphere_radius;
+    std::cout << "new z=" << (*sphere_coord)[2] << std::endl;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -70,6 +74,8 @@ FixDivideLimited::FixDivideLimited(LAMMPS *lmp, int narg, char **arg) :
 
   int iarg = 6;
   nregion = -1;
+  varflag = 0;
+  vstr = xstr = ystr = zstr = nullptr;
   while (iarg < narg) {
     if (strcmp(arg[iarg], "region_blocked") == 0) {
       nregion = domain->find_region(arg[iarg+1]);
@@ -77,8 +83,72 @@ FixDivideLimited::FixDivideLimited(LAMMPS *lmp, int narg, char **arg) :
       domain->regions[nregion]->init();
       domain->regions[nregion]->prematch();
       iarg += 2;
+  } else if (strcmp(arg[iarg], "var") == 0) {
+    if (iarg+2 > narg) error->all(FLERR,"Illegal fix nufeb/division/limited command");
+    delete [] vstr;
+    int n = strlen(arg[iarg+1]) + 1;
+    vstr = new char[n];
+    strcpy(vstr,arg[iarg+1]);
+    varflag = 1;
+    iarg += 2;
+  } else if (strcmp(arg[iarg],"set") == 0) {
+    if (iarg+3 > narg) error->all(FLERR,"Illegal create_atoms command");
+    if (strcmp(arg[iarg+1],"x") == 0) {
+      delete [] xstr;
+      int n = strlen(arg[iarg+2]) + 1;
+      xstr = new char[n];
+      strcpy(xstr,arg[iarg+2]);
+    } else if (strcmp(arg[iarg+1],"y") == 0) {
+      delete [] ystr;
+      int n = strlen(arg[iarg+2]) + 1;
+      ystr = new char[n];
+      strcpy(ystr,arg[iarg+2]);
+    } else if (strcmp(arg[iarg+1],"z") == 0) {
+      delete [] zstr;
+      int n = strlen(arg[iarg+2]) + 1;
+      zstr = new char[n];
+      strcpy(zstr,arg[iarg+2]);
+    } else error->all(FLERR,"Illegal create_atoms command");
+    iarg += 3;
     } else {
-      error->all(FLERR, "Illegal fix nufeb/division/limited command");
+    error->all(FLERR, "Illegal fix nufeb/division/limited command");
+    }
+  }
+
+  // error check and further setup for variable test
+
+  if (!vstr && (xstr || ystr || zstr))
+    error->all(FLERR,"Incomplete use of variables in create_atoms command");
+  if (vstr && (!xstr && !ystr && !zstr))
+    error->all(FLERR,"Incomplete use of variables in create_atoms command");
+
+  if (varflag) {
+    vvar = input->variable->find(vstr);
+    if (vvar < 0)
+      error->all(FLERR,"Variable name for create_atoms does not exist");
+    if (!input->variable->equalstyle(vvar))
+      error->all(FLERR,"Variable for create_atoms is invalid style");
+
+    if (xstr) {
+      xvar = input->variable->find(xstr);
+      if (xvar < 0)
+        error->all(FLERR,"Variable name for create_atoms does not exist");
+      if (!input->variable->internalstyle(xvar))
+        error->all(FLERR,"Variable for create_atoms is invalid style");
+    }
+    if (ystr) {
+      yvar = input->variable->find(ystr);
+      if (yvar < 0)
+        error->all(FLERR,"Variable name for create_atoms does not exist");
+      if (!input->variable->internalstyle(yvar))
+        error->all(FLERR,"Variable for create_atoms is invalid style");
+    }
+    if (zstr) {
+      zvar = input->variable->find(zstr);
+      if (zvar < 0)
+        error->all(FLERR,"Variable name for create_atoms does not exist");
+      if (!input->variable->internalstyle(zvar))
+        error->all(FLERR,"Variable for create_atoms is invalid style");
     }
   }
 
@@ -102,6 +172,7 @@ void FixDivideLimited::compute()
   for (int i = 0; i < nlocal; i++) {
     if (atom->mask[i] & groupbit) {
       if (atom->radius[i] * 2 >= diameter) {    // atom will divide
+        std::cout << "Going to divide";
         double density = atom->rmass[i] / (     // mass
           4.0 * MY_PI / 3.0 * atom->radius[i] * atom->radius[i] * atom->radius[i]); // volume
 
@@ -129,17 +200,17 @@ void FixDivideLimited::compute()
         double newy = oldy + (atom->radius[i] * sin(theta) * sin(phi) * DELTA);
         double newz = oldz + (atom->radius[i] * cos(phi) * DELTA);
 
+        std::cout << "Got before my stuff";
         double sphere_coord[3] = {newx, newy, newz};
         double floor_zhi = domain->regions[nregion]->extent_zhi;
 
         if (nregion != -1) {
           newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
         }
-
-        if (nregion != -1) {
-          if (isSphereInsideSinusoidalRegion(&sphere_coord, atom->radius[i])) {
-            putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
-          }
+        std::cout << "And got before calling vvar the first time";
+        std::cout << "varflag=" << varflag << "vvar=" << vvar << std::endl;
+        if (varflag) {
+          putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
         }
 
         if (newx - atom->radius[i] < domain->boxlo[0]) {
@@ -192,10 +263,9 @@ void FixDivideLimited::compute()
           newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
         }
 
-        if (nregion != -1) {
-          if (isSphereInsideSinusoidalRegion(&sphere_coord, atom->radius[i])) {
-            putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
-          }
+        std::cout << "varflag=" << varflag << "vvar=" << vvar << std::endl;
+        if (varflag) {
+          putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
         }
 
         coord[0] = newx;
