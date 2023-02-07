@@ -20,3 +20,7 @@ Python analysis. Requires pandas and matplotlib.
 ```
 python pure_culture_gac.py
 ```
+
+## Results
+
+![Methane by GAC shape per number of cells](./examples/gac_pure_culture/plots/methane_by_number_cells.png)
