@@ -134,13 +134,6 @@ void FixGrowthMethanogen::update_cells()
             // co2 dissolution
             if (gco2_flag == 1)
                 reac[ico2][i] += (4.4e-6 * conc[igco2][i]) - (4.4e-6 * conc[ico2][i]);
-            /*
-            // write reac to file, taking care to append if file exists
-            std::ofstream myfile;
-            myfile.open("values.txt", std::ios_base::app);
-            myfile << i << "\t" << reac[ich4][i] << "\t" << yield << "\t" << tmp1 << "\t" << dens[igroup][i] << "\n";
-            myfile.close();
-            */
         }
     }
 }

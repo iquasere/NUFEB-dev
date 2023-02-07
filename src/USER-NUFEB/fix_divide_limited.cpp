@@ -53,7 +53,7 @@ void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_r
   std::cout << "x=" << (*sphere_coord)[0] << " y=" << (*sphere_coord)[1] << " z=" << (*sphere_coord)[2] << std::endl;
   double surface_z = sin(sin(5e5 * (*sphere_coord)[0])) * sin(cos(5e5 * (*sphere_coord)[1])) / 10e4;
   std::cout << "surface_z=" << surface_z << " sphere_radius=" << sphere_radius << std::endl;
-  if ((*sphere_coord)[2] - sphere_radius < surface_z) {
+  if ((*sphere_coord)[2] - sphere_radius <= surface_z) {
     std::cout << "putting sphere outside sinusoidal region" << std::endl;
     (*sphere_coord)[2] = surface_z + sphere_radius;
     std::cout << "new z=" << (*sphere_coord)[2] << std::endl;
@@ -116,7 +116,6 @@ FixDivideLimited::FixDivideLimited(LAMMPS *lmp, int narg, char **arg) :
   }
 
   // error check and further setup for variable test
-
   if (!vstr && (xstr || ystr || zstr))
     error->all(FLERR,"Incomplete use of variables in create_atoms command");
   if (vstr && (!xstr && !ystr && !zstr))
@@ -205,9 +204,9 @@ void FixDivideLimited::compute()
           double floor_zhi = domain->regions[nregion]->extent_zhi;
           newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
         }
-        std::cout << "varflag=" << varflag << "vvar=" << vvar << std::endl;
         if (varflag) {
           putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
+          newz = sphere_coord[2];
         }
 
         if (newx - atom->radius[i] < domain->boxlo[0]) {
@@ -263,6 +262,7 @@ void FixDivideLimited::compute()
 
         if (varflag) {
           putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
+          newz = sphere_coord[2];
         }
 
         coord[0] = newx;
