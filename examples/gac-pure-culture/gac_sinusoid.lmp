@@ -1,4 +1,4 @@
-# NUFEB simulation with methanogens and GAC floor
+# NUFEB simulation with methanogens and GAC sinusoidal surface
 
 units si                                   	# using si units
 atom_style      coccus                      # using nufeb atom style
@@ -24,7 +24,7 @@ read_data      gac_pure_culture.in
 
 # Shift the lattice grid 0.5 unit so that atom can be created in the center of the grid
 lattice sc 1e-6 origin 0.5 0.5 0.5
-region reg block 0 20 0 20 2 3
+region reg block 0 20 0 20 1 2
 
 create_atoms 1 random 80 31324 reg
 
@@ -66,16 +66,17 @@ neighbor        7e-7 bin
 neigh_modify    check yes
 
 # select grid style
-grid_style      nufeb/chemostat 3 sub co2 ch4 2e-6
+grid_style      nufeb/chemostat 4 sub co2 ch4 gco2 2e-6
 
 # test grid comm
 #run_style       test/comm_grid
 #run             0
 
 # set substrates initial concentration
-grid_modify     set sub   nn nn nd 1e-4 1e-4
-grid_modify     set co2   nn nn nd 1e-4 1e-4
-grid_modify     set ch4   nn nn nd 0 0
+grid_modify     set sub   nn nn nn 1e-4 1e-4
+grid_modify     set co2   nn nn nn 1e-4 1e-4
+grid_modify     set ch4   nn nn nn 0 0
+grid_modify     set gco2  nn nn nn 0 0
 
 # define pair style
 pair_style  gran/hooke/history 1e-4 NULL 1e-5 NULL 0.0 1
@@ -87,7 +88,7 @@ fix nve non-gac nve/limit 1e-8
 
 # monod reaction fixes
 #   should consider using read_data's fix keyword
-fix monod_met met nufeb/growth/methanogen sub 4e-3 co2 2e-4 ch4 2e-4 growth 6.9444 yield 0.01 decay 0 epsyield 0.01e-4 epsdens 30
+fix monod_met met nufeb/growth/methanogen sub 4e-3 co2 2e-4 ch4 gco2 growth 6.9444 yield 0.01 decay 0 epsyield 0.01e-4 epsdens 30
 fix monod_eps eps nufeb/growth/eps sub decay 0
 
 # diffusion reaction fixes
@@ -97,7 +98,7 @@ fix diff_ch4 all nufeb/diffusion_reaction ch4 2.3148e-9
 
 # biological model fixes
 # apply division to met only
-fix div met nufeb/division/coccus 1.36e-6 30 1234
+fix div met nufeb/division/limited 1.36e-6 30 1234 var v set x xx set y yy set z zz
 fix eps_ext met nufeb/eps_extract 2 eps 1.3 30 5678
 
 # mechanical model fixes
@@ -113,16 +114,24 @@ compute press all pressure NULL pair vol v_one
 variable press equal "(c_ke + c_press) / (3.0 * c_vol)"
 variable mass equal "mass(all)"
 
+variable nmet equal "count(met)"
+variable neps equal "count(eps)"
+compute mycon all nufeb/ave_conc
+variable ch4 equal c_mycon[2]
+
 # file output
 shell mkdir vtk_gac_sinusoid
 dump 1 all vtk 10 vtk_gac_sinusoid/dump*.vtu id type diameter
 dump 2 all grid/vtk 10 vtk_gac_sinusoid/dump_%_*.vti con
 
 # thermo output
-thermo_style custom step atoms v_press v_mass
+thermo_style custom step atoms v_press v_mass v_nmet v_neps c_mycon[*]
 thermo 1
+
+# write atom information
+write_data tsv_gac_sinusoid/dump_*.data
 
 # issue run command
 run_style nufeb diffdt 1e-4 difftol 1e-12 pairdt 1e-2 pairtol 1 pairmax 1000 diffmax 50000
 timestep 1000
-run 1
+run 200
