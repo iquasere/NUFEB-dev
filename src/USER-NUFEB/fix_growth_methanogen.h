@@ -36,8 +36,6 @@ namespace LAMMPS_NS {
         int ih2;
         int ico2;
         int ich4;
-        int igco2;
-        int gco2_flag;
 
         double h2_affinity;
         double co2_affinity;

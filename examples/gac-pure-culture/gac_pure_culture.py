@@ -1,12 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-no_gac = pd.read_csv('no_gac.tsv', sep='\t', skiprows=1, usecols=range(1, 11), index_col=0, header=None, names=[
-    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4', 'c_gco2'])
-sheet = pd.read_csv('sheet.tsv', sep='\t', skiprows=1, usecols=range(1, 11), index_col=0, header=None, names=[
-    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4', 'c_gco2'])
-sinusoid = pd.read_csv('sinusoid.tsv', sep='\t', skiprows=1, usecols=range(1, 11), index_col=0, header=None, names=[
-    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4', 'c_gco2'])
+no_gac = pd.read_csv('no_gac.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
+    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
+sheet = pd.read_csv('sheet.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
+    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
+sinusoid = pd.read_csv('sinusoid.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
+    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
 
 
 # Methane total
