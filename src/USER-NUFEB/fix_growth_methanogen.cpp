@@ -36,7 +36,7 @@ using namespace MathConst;
 double vmax_h2 = 0.174;         // maximum uptake rate for H2 ( mol / s * gDW ) at pH 7.6 for M. formicicum
 
 FixGrowthMethanogen::FixGrowthMethanogen(LAMMPS *lmp, int narg, char **arg) :
-        FixGrowth(lmp, narg, arg)
+    FixGrowth(lmp, narg, arg)
 {
   if (narg < 9)
     error->all(FLERR, "Illegal fix nufeb/growth/methanogen command");
@@ -47,9 +47,9 @@ FixGrowthMethanogen::FixGrowthMethanogen(LAMMPS *lmp, int narg, char **arg) :
   if (!atom->coccus_flag)
     error->all(FLERR, "fix nufeb/growth/methanogen requires atom_style coccus");
 
-  ih2 = -1;
-  ico2 = -1;
-  ich4 = -1;
+  ih2 = -1;               // index of H2 in grid
+  ico2 = -1;              // index of CO2 in grid
+  ich4 = -1;              // index of CH4 in grid
 
   h2_affinity = 0.0;      // Km for H2 (mol)
   co2_affinity = 0.0;     // Km for CO2 (mol)
@@ -60,6 +60,8 @@ FixGrowthMethanogen::FixGrowthMethanogen(LAMMPS *lmp, int narg, char **arg) :
   decay = 0.0;            // decay rate (gDW/s)
   eps_yield = 0.0;        // yield coefficient for EPS production (gDW/mol)
   eps_dens = 1.0;         // EPS density (gDW/L)
+
+  gco2_flag = 0;          // flag for co2 dissolution (0 = no, 1 = yes)
 
   ih2 = grid->find(arg[3]);
   if (ih2 < 0)
@@ -75,7 +77,11 @@ FixGrowthMethanogen::FixGrowthMethanogen(LAMMPS *lmp, int narg, char **arg) :
   if (ich4 < 0)
     error->all(FLERR, "Can't find CH4");
 
-  int iarg = 8;
+  igco2 = grid->find(arg[8]);
+  if (igco2 < 0)
+    error->all(FLERR, "Can't find substrate(gco2) name");
+
+  int iarg = 9;
   while (iarg < narg) {
     if (strcmp(arg[iarg], "growth") == 0) {
       growth = utils::numeric(FLERR,arg[iarg+1],true,lmp);
@@ -95,6 +101,9 @@ FixGrowthMethanogen::FixGrowthMethanogen(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg], "epsdens") == 0) {
       eps_dens = utils::numeric(FLERR,arg[iarg+1],true,lmp);
       iarg += 2;
+    } else if (strcmp(arg[iarg], "gco2_flag") == 0) {
+      gco2_flag = utils::inumeric(FLERR,arg[iarg+1],true,lmp);
+      iarg += 2;
     } else {
       error->all(FLERR, "Illegal fix nufeb/growth/methanogen command");
     }
@@ -113,7 +122,7 @@ void FixGrowthMethanogen::update_cells()
     // formicicum growth based on hydrogen and co2
     // 0.25 because 4H -> 1CH4
     double tmp1 = growth * (0.25 * vmax_h2 * conc[ih2][i] / (h2_affinity + conc[ih2][i])) * (
-            conc[ico2][i] / (co2_affinity + conc[ico2][i]));
+        conc[ico2][i] / (co2_affinity + conc[ico2][i]));
 
     // TODO - talk about this with Andreia
     // maintenance based on co2 or acetate?
@@ -126,6 +135,8 @@ void FixGrowthMethanogen::update_cells()
       // methane evolution
       reac[ich4][i] += 1 / yield * tmp1 * dens[igroup][i];
       // water not considered
+      if (gco2_flag == 1)
+        reac[ico2][i] += (4.4e-6 * conc[igco2][i]) - (4.4e-6 * conc[ico2][i]);
     }
   }
 }

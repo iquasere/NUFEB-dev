@@ -7,14 +7,17 @@ sheet = pd.read_csv('sheet.tsv', sep='\t', skiprows=1, usecols=range(1, 10), ind
     'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
 sinusoid = pd.read_csv('sinusoid.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
     'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
-
+i = min(len(no_gac), len(sheet), len(sinusoid))
+no_gac = no_gac.iloc[:i]
+sheet = sheet.iloc[:i]
+sinusoid = sinusoid.iloc[:i]
 
 # Methane total
 x = sheet.index
 no_gac_ch4 = no_gac['c_ch4']
 sheet_ch4 = sheet['c_ch4']
 sinusoid_ch4 = sinusoid['c_ch4']
-
+plt.clf()
 plt.plot(x, no_gac_ch4, label='No GAC')
 plt.plot(x, sheet_ch4, label='GAC sheet')
 plt.plot(x, sinusoid_ch4, label='GAC sinusoid')
@@ -29,7 +32,6 @@ plt.clf()
 no_gac_ch4 = no_gac['c_ch4'] / no_gac['# met']
 sheet_ch4 = sheet['c_ch4'] / sheet['# met']
 sinusoid_ch4 = sinusoid['c_ch4'] / sinusoid['# met']
-
 plt.plot(x, no_gac_ch4, label='No GAC')
 plt.plot(x, sheet_ch4, label='GAC sheet')
 plt.plot(x, sinusoid_ch4, label='GAC sinusoid')

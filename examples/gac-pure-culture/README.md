@@ -18,7 +18,7 @@ grep -E '^([^\s]+\s){9}[^\s]+$' NUFEB-dev/examples/gac_pure_culture/sheet.log | 
 
 Python analysis. Requires pandas and matplotlib.
 ```
-python pure_culture_gac.py
+python gac_pure_culture.py
 ```
 
 ## Results

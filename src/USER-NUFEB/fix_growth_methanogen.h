@@ -36,6 +36,7 @@ namespace LAMMPS_NS {
         int ih2;
         int ico2;
         int ich4;
+        int igco2;
 
         double h2_affinity;
         double co2_affinity;
@@ -46,6 +47,7 @@ namespace LAMMPS_NS {
         double decay;
         double eps_yield;
         double eps_dens;
+        double gco2_flag;
     };
 
 }
