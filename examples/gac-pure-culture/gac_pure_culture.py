@@ -1,16 +1,21 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-no_gac = pd.read_csv('no_gac.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
-    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
-sheet = pd.read_csv('sheet.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
-    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
-sinusoid = pd.read_csv('sinusoid.tsv', sep='\t', skiprows=1, usecols=range(1, 10), index_col=0, header=None, names=[
-    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_sub', 'c_co2', 'c_ch4'])
-i = min(len(no_gac), len(sheet), len(sinusoid))
-no_gac = no_gac.iloc[:i]
-sheet = sheet.iloc[:i]
-sinusoid = sinusoid.iloc[:i]
+no_gac = pd.read_csv('no_gac.tsv', sep='\t', skiprows=1, usecols=range(1, 11), index_col=0, header=None, names=[
+    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_h2', 'c_gco2', 'c_co2', 'c_ch4'])
+sheet = pd.read_csv('sheet.tsv', sep='\t', skiprows=1, usecols=range(1, 11), index_col=0, header=None, names=[
+    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_h2', 'c_gco2', 'c_co2', 'c_ch4'])
+sinusoid = pd.read_csv('sinusoid.tsv', sep='\t', skiprows=1, usecols=range(1, 11), index_col=0, header=None, names=[
+    'step', '# atoms', 'Pressure', 'Mass', '# met', '# eps', 'c_h2', 'c_gco2', 'c_co2', 'c_ch4'])
+i = max(len(no_gac), len(sheet), len(sinusoid))
+
+if len(no_gac) < i:
+    no_gac = pd.concat([no_gac, pd.DataFrame([no_gac.iloc[-1].values.tolist()] * (i - len(no_gac)), columns=no_gac.columns, index=range(len(no_gac), i))])
+if len(sheet) < i:
+    sheet = pd.concat([sheet, pd.DataFrame([sheet.iloc[-1].values.tolist()] * (i - len(sheet)), columns=sheet.columns, index=range(len(sheet), i))])
+if len(sinusoid) < i:
+    sinusoid = pd.concat([sinusoid, pd.DataFrame([sinusoid.iloc[-1].values.tolist()] * (i - len(sinusoid)), columns=sinusoid.columns, index=range(len(sinusoid), i))])
+
 
 # Methane total
 x = sheet.index
