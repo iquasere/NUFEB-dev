@@ -123,7 +123,7 @@ FixDivideLimited::FixDivideLimited(LAMMPS *lmp, int narg, char **arg) :
       error->all(FLERR,"Variable name for create_atoms does not exist");
     if (!input->variable->equalstyle(vvar))
       error->all(FLERR,"Variable for create_atoms is invalid style");
-
+    std::cout << "vvar: " << vvar << std::endl;
     if (xstr) {
       xvar = input->variable->find(xstr);
       if (xvar < 0)
