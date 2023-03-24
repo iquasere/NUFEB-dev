@@ -109,12 +109,11 @@ variable mass equal "mass(all)"
 variable nmet equal "count(met)"
 variable neps equal "count(eps)"
 compute mycon all nufeb/ave_conc
-variable ch4 equal c_mycon[2]
 
 # file output
-shell mkdir vtk_gac_sheet
-dump 1 all vtk 10 vtk_gac_sheet/dump*.vtu id type diameter
-dump 2 all grid/vtk 10 vtk_gac_sheet/dump_%_*.vti con
+shell mkdir vtk_gac_sheet_light
+dump 1 all vtk 10 vtk_gac_sheet_light/dump*.vtu id type diameter
+dump 2 all grid/vtk 10 vtk_gac_sheet_light/dump_%_*.vti con
 
 # thermo output
 thermo_style custom step atoms v_press v_mass v_nmet v_neps c_mycon[*]
