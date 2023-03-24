@@ -143,11 +143,10 @@ void FixDivideCoccusKokkos<DeviceType>::compute()
   for (int i = 0; i < nlocal; i++) {
     int j = h_divide_list(i);
     if (j > 0) {
+      modify->create_attribute(j);
+
       for (int m = 0; m < modify->nfix; m++)
 	modify->fix[m]->update_arrays(i, j);
-
-      for (int m = 0; m < modify->ncompute; m++)
-	modify->compute[m]->set_arrays(j);
     }
   }
 

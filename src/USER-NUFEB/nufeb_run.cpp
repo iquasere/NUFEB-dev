@@ -401,7 +401,7 @@ void NufebRun::run(int n)
 
   for (int i = 0; i < n; i++) {
     double step_start = get_time();
-    
+
     if (timer->check_timeout(i)) {
       update->nsteps = i;
       break;
@@ -433,7 +433,7 @@ void NufebRun::run(int n)
     update->dt = biodt;
     reset_dt();
 
-    // call all fixes implementing post_physcis()
+    // call all fixes implementing post_physics_nufeb()
     if (modify->n_post_physics_nufeb) {
       timer->stamp();
       modify->post_physics_nufeb();
@@ -446,17 +446,6 @@ void NufebRun::run(int n)
     if (profile)
       fprintf(profile, "%d %e ", ndiff, get_time()-t);
     if (info && comm->me == 0) fprintf(screen, "diffusion: %d steps\n", ndiff);
-
-    // reset to biological timestep
-    update->dt = biodt;
-    reset_dt();
-
-    // call all fixes implementing post_chemistry_nufeb()
-    if (modify->n_post_chemistry_nufeb) {
-      timer->stamp();
-      modify->post_chemistry_nufeb();
-      timer->stamp(Timer::MODIFY);
-    }
 
     // run reactor module
     t = get_time();
@@ -569,9 +558,9 @@ int NufebRun::module_chemsitry()
   update->dt = diffdt;
   reset_dt();
   
-  for (int i = 0; i < nfix_diffusion; i++) {
-    fix_diffusion[i]->closed_system_initial();
-  }
+//  for (int i = 0; i < nfix_diffusion; i++) {
+//    fix_diffusion[i]->closed_system_initial();
+//  }
 
   int niter = 0;
   bool conv_flag;
@@ -589,7 +578,7 @@ int NufebRun::module_chemsitry()
       fix_diffusion[i]->compute_initial();
     }
 
-    // call all fixes implementing chemistry_nufebs()
+    // call all fixes implementing chemistry_nufeb()
     if (modify->n_chemistry_nufeb) {
       timer->stamp();
       modify->chemistry_nufeb();

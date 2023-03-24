@@ -38,13 +38,20 @@ using namespace MathConst;
 FixDivideCoccus::FixDivideCoccus(LAMMPS *lmp, int narg, char **arg) :
   FixDivide(lmp, narg, arg)
 {
-  if (narg < 6)
+  if (narg < 5)
     error->all(FLERR, "Illegal fix nufeb/division/coccus command");
-  
+
+  eps_density = 30;    //default EPS density
   diameter = utils::numeric(FLERR,arg[3],true,lmp);
-  eps_density = utils::numeric(FLERR,arg[4],true,lmp);
-  seed = utils::inumeric(FLERR,arg[5],true,lmp);
-  
+  seed = utils::inumeric(FLERR,arg[4],true,lmp);
+
+  int iarg = 5;
+  while (iarg < narg) {
+  if (strcmp(arg[iarg], "epsdens") == 0) {
+    eps_density = utils::numeric(FLERR,arg[iarg+1],true,lmp);
+    iarg += 2;
+    }
+  }
   // Random number generator, same for all procs
   random = new RanPark(lmp, seed);
 }
@@ -61,12 +68,15 @@ FixDivideCoccus::~FixDivideCoccus()
 void FixDivideCoccus::compute()
 {  
   int nlocal = atom->nlocal;
+  const double third = 1.0 / 3.0;
+  const double four_thirds_pi = 4.0 * MY_PI / 3.0;
+  const double three_quarters_pi = (3.0 / (4.0 * MY_PI));
 
   for (int i = 0; i < nlocal; i++) {
     if (atom->mask[i] & groupbit) {
       if (atom->radius[i] * 2 >= diameter) {
-	double density = atom->rmass[i] /
-	  (4.0 * MY_PI / 3.0 * atom->radius[i] * atom->radius[i] * atom->radius[i]);
+    	double density = atom->rmass[i] /
+        (four_thirds_pi * atom->radius[i] * atom->radius[i] * atom->radius[i]);
 
         double split = 0.4 + (random->uniform() * 0.2);
         double imass = atom->rmass[i] * split;
@@ -85,8 +95,8 @@ void FixDivideCoccus::compute()
         // update daughter cell i
         atom->rmass[i] = imass;
         atom->outer_mass[i] = iouter_mass;
-        atom->radius[i] = pow(((6 * atom->rmass[i]) / (density * MY_PI)), (1.0 / 3.0)) * 0.5;
-        atom->outer_radius[i] = pow((3.0 / (4.0 * MY_PI)) * ((atom->rmass[i] / density) + (iouter_mass / eps_density)), (1.0 / 3.0));
+        atom->radius[i] = pow(((6 * atom->rmass[i]) / (density * MY_PI)), third) * 0.5;
+        atom->outer_radius[i] = pow(three_quarters_pi * ((atom->rmass[i] / density) + (iouter_mass / eps_density)), third);
         double newx = oldx + (atom->radius[i] * cos(theta) * sin(phi) * DELTA);
         double newy = oldy + (atom->radius[i] * sin(theta) * sin(phi) * DELTA);
         double newz = oldz + (atom->radius[i] * cos(phi) * DELTA);
@@ -110,8 +120,8 @@ void FixDivideCoccus::compute()
         atom->x[i][2] = newz;
 
         // create daughter cell j
-        double jradius = pow(((6 * jmass) / (density * MY_PI)), (1.0 / 3.0)) * 0.5;
-        double jouter_radius = pow((3.0 / (4.0 * MY_PI)) * ((jmass / density) + (jouter_mass / eps_density)), (1.0 / 3.0));
+        double jradius = pow(((6 * jmass) / (density * MY_PI)), third) * 0.5;
+        double jouter_radius = pow(three_quarters_pi * ((jmass / density) + (jouter_mass / eps_density)), third);
         double *coord = new double[3];
         newx = oldx - (jradius * cos(theta) * sin(phi) * DELTA);
         newy = oldy - (jradius * sin(theta) * sin(phi) * DELTA);
@@ -143,15 +153,12 @@ void FixDivideCoccus::compute()
         atom->v[j][0] = atom->v[i][0];
         atom->v[j][1] = atom->v[i][1];
         atom->v[j][2] = atom->v[i][2];
-	atom->f[j][0] = atom->f[i][0];
-	atom->f[j][1] = atom->f[i][1];
-	atom->f[j][2] = atom->f[i][2];
+        atom->f[j][0] = atom->f[i][0];
+        atom->f[j][1] = atom->f[i][1];
+        atom->f[j][2] = atom->f[i][2];
         atom->omega[j][0] = atom->omega[i][0];
         atom->omega[j][1] = atom->omega[i][1];
         atom->omega[j][2] = atom->omega[i][2];
-	atom->torque[j][0] = atom->torque[i][0];
-	atom->torque[j][1] = atom->torque[i][1];
-	atom->torque[j][2] = atom->torque[i][2];
         atom->rmass[j] = jmass;
         atom->biomass[j] = atom->biomass[i];
         atom->radius[j] = jradius;

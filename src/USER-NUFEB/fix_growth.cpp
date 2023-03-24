@@ -22,10 +22,12 @@
 #include "math_const.h"
 #include "atom_vec_bacillus.h"
 #include "fix_growth.h"
-
+#include "grid_masks.h"
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
+
+#define MIN_MASS 1e-30
 
 /* ---------------------------------------------------------------------- */
 
@@ -105,20 +107,31 @@ void FixGrowth::update_atoms_coccus()
   const double three_quarters_pi = (3.0 / (4.0 * MY_PI));
   const double four_thirds_pi = 4.0 * MY_PI / 3.0;
   const double third = 1.0 / 3.0;
+  int mass_flag = 0;
 
   for (int i = 0; i < atom->nlocal; i++) {
     if (atom->mask[i] & groupbit) {
       const int cell = grid->cell(x[i]);
-      const double density = rmass[i] /
-    (four_thirds_pi * radius[i] * radius[i] * radius[i]);
+      // skip atoms in ghost cells
+      if (grid->mask[cell] & GHOST_MASK) continue;
+
+      const double density = rmass[i] / (four_thirds_pi * radius[i] * radius[i] * radius[i]);
       double growth = grid->growth[igroup][cell][0];
       // forward Euler to update rmass
       rmass[i] = rmass[i] * (1 + growth * dt);
+      if (rmass[i] <= 0) {
+        rmass[i] = MIN_MASS;
+        mass_flag = 1;
+      }
+
       radius[i] = pow(three_quarters_pi * (rmass[i] / density), third);
       outer_mass[i] = 0;
       outer_radius[i] = radius[i];
     }
   }
+
+  if (mass_flag)
+    error->warning(FLERR,"Negative atom mass, reset value to 1e-30kg. Consider using fix nufeb/death/diameter");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -129,6 +142,7 @@ void FixGrowth::update_atoms_bacillus(AtomVecBacillus *&avec)
   double *rmass = atom->rmass;
 
   const double four_thirds_pi = 4.0 * MY_PI / 3.0;
+  int mass_flag = 0;
 
   for (int i = 0; i < atom->nlocal; i++) {
     if (atom->mask[i] & groupbit) {
@@ -141,10 +155,18 @@ void FixGrowth::update_atoms_bacillus(AtomVecBacillus *&avec)
 
       double new_length;
       const int cell = grid->cell(x[i]);
+      // skip atoms in ghost cells
+      if (grid->mask[cell] & GHOST_MASK) continue;
+
       const double density = rmass[i] /	(vsphere + acircle * bonus->length);
       double growth = grid->growth[igroup][cell][0];
       // forward Eular to update rmass
       rmass[i] = rmass[i] * (1 + growth * dt);
+      if (rmass[i] <= 0) {
+        rmass[i] = MIN_MASS;
+        mass_flag = 1;
+      }
+
       new_length = (rmass[i] - density * vsphere) / (density * acircle);
       bonus->length = new_length;
       // update coordinates of two poles
@@ -159,4 +181,7 @@ void FixGrowth::update_atoms_bacillus(AtomVecBacillus *&avec)
       pole2[2] *= new_length/length;
     }
   }
+
+  if (mass_flag)
+    error->warning(FLERR,"Negative atom mass, reset value to 1e-30kg. Consider using fix nufeb/death/diameter");
 }
