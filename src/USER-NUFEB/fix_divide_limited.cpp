@@ -28,6 +28,7 @@
 #include "atom_masks.h"
 
 #include "lammps.h"
+#include "compute.h"
 #include "region.h"
 #include "fix_divide_limited.h"
 #include "input.h"
@@ -47,6 +48,21 @@ double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double
     sphere_z = extent_zhi + sphere_radius;
   }
   return sphere_z;
+}
+
+void replaceVariables(std::string* expression, double x_val, double y_val) {
+  // Replace v_xx and v_yy with their values
+  size_t pos = expression->find("v_xx");
+  while (pos != std::string::npos) {
+    expression->replace(pos, 4, std::to_string(x_val));
+    pos = expression->find("v_xx");
+  }
+
+  pos = expression->find("v_yy");
+  while (pos != std::string::npos) {
+    expression->replace(pos, 4, std::to_string(y_val));
+    pos = expression->find("v_yy");
+  }
 }
 
 void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius) {
@@ -123,7 +139,6 @@ FixDivideLimited::FixDivideLimited(LAMMPS *lmp, int narg, char **arg) :
       error->all(FLERR,"Variable name for create_atoms does not exist");
     if (!input->variable->equalstyle(vvar))
       error->all(FLERR,"Variable for create_atoms is invalid style");
-    std::cout << "vvar: " << vvar << std::endl;
     if (xstr) {
       xvar = input->variable->find(xstr);
       if (xvar < 0)
@@ -201,6 +216,15 @@ void FixDivideLimited::compute()
           newz = putSphereOutsideFloorRegion(newz, atom->radius[i], floor_zhi);
         }
         if (varflag) {
+          std::string expression = input->variable->get_expression_as_string(vstr);
+          std::string* exp_ptr = &expression;
+          std::cout << "Expression:" << expression << std::endl;
+          replaceVariables(exp_ptr, newx, newy);
+          std::cout << "New expression:" << expression << std::endl;
+          const char* myCharPtr = expression.c_str();
+          char* myMutableCharPtr = const_cast<char*>(myCharPtr);
+          double expression_z = input->variable->compute_equal(myMutableCharPtr);
+          std::cout << "x=" << newx << ";y=" << newy << ";calculated z=" << expression_z << std::endl;
           putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
           newz = sphere_coord[2];
         }

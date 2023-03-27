@@ -123,4 +123,4 @@ thermo_modify lost ignore flush yes
 # issue run command
 run_style nufeb diffdt 1e-4 difftol 1e-12 pairdt 2 pairtol 0 pairmax 500 diffmax 50000
 timestep 1000
-run 500
+run 300

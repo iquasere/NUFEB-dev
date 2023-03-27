@@ -23,6 +23,7 @@ FixStyle(nufeb/division/limited,FixDivideLimited)
 #include "fix_divide.h"
 
 double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double extent_zhi);
+void replaceVariables(std::string* expression, double x_val, double y_val);
 void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius);
 
 namespace LAMMPS_NS {

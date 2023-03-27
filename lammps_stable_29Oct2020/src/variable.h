@@ -15,6 +15,7 @@
 #define LMP_VARIABLE_H
 
 #include "pointers.h"
+#include <string>
 
 namespace LAMMPS_NS {
 
@@ -39,6 +40,7 @@ class Variable : protected Pointers {
   char *pythonstyle(char *, char *);
   int internalstyle(int);
 
+  std::string get_expression_as_string(char *);
   char *retrieve(const char *);
   double compute_equal(int);
   double compute_equal(char *);

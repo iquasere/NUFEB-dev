@@ -39,6 +39,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <vector>
+#include <iostream>
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
@@ -861,6 +862,16 @@ int Variable::internalstyle(int ivar)
 {
   if (style[ivar] == INTERNAL) return 1;
   return 0;
+}
+
+/* ----------------------------------------------------------------------
+   return the expression of a variable
+------------------------------------------------------------------------- */
+
+std::string Variable::get_expression_as_string(char *name) {
+  int ivar = find(name);
+  std::string expression = data[ivar][0];
+  return expression;
 }
 
 /* ----------------------------------------------------------------------
