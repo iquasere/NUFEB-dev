@@ -51,8 +51,14 @@ double putSphereOutsideFloorRegion(double sphere_z, double sphere_radius, double
 }
 
 void replaceVariables(std::string* expression, double x_val, double y_val) {
+  // remove the "v_zz <" part
+  size_t pos = expression->find("<");
+  if (pos != std::string::npos) {
+    expression->erase(0, pos + 1);
+  }
+
   // Replace v_xx and v_yy with their values
-  size_t pos = expression->find("v_xx");
+  pos = expression->find("v_xx");
   while (pos != std::string::npos) {
     expression->replace(pos, 4, std::to_string(x_val));
     pos = expression->find("v_xx");
@@ -67,6 +73,7 @@ void replaceVariables(std::string* expression, double x_val, double y_val) {
 
 void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius) {
   double surface_z = sin(sin(5e5 * (*sphere_coord)[0])) * sin(cos(5e5 * (*sphere_coord)[1])) / 10e4;
+  std::cout << "surface_z is: " << surface_z << std::endl;
   if ((*sphere_coord)[2] - sphere_radius <= surface_z) {
     (*sphere_coord)[2] = surface_z + sphere_radius;
   }
