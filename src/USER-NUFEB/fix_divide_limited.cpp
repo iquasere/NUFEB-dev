@@ -71,12 +71,13 @@ void replaceVariables(std::string* expression, double x_val, double y_val) {
   }
 }
 
-void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius) {
-  double surface_z = sin(sin(5e5 * (*sphere_coord)[0])) * sin(cos(5e5 * (*sphere_coord)[1])) / 10e4;
-  std::cout << "surface_z is: " << surface_z << std::endl;
+void putSphereOutsideSinusoidalRegion(double (*sphere_coord)[3], double sphere_radius, double surface_z) {
+  std::cout << "old sphere z: " << (*sphere_coord)[2] << "\n";
+  std::cout << "surface z: " << surface_z << "\n";
   if ((*sphere_coord)[2] - sphere_radius <= surface_z) {
     (*sphere_coord)[2] = surface_z + sphere_radius;
   }
+  std::cout << "new sphere z: " << (*sphere_coord)[2] << "\n";
 }
 
 /* ---------------------------------------------------------------------- */
@@ -231,8 +232,7 @@ void FixDivideLimited::compute()
           const char* myCharPtr = expression.c_str();
           char* myMutableCharPtr = const_cast<char*>(myCharPtr);
           double expression_z = input->variable->compute_equal(myMutableCharPtr);
-          std::cout << "x=" << newx << ";y=" << newy << ";calculated z=" << expression_z << std::endl;
-          putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
+          putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i], expression_z);
           newz = sphere_coord[2];
         }
 
@@ -288,7 +288,15 @@ void FixDivideLimited::compute()
         }
 
         if (varflag) {
-          putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i]);
+          std::string expression = input->variable->get_expression_as_string(vstr);
+          std::string* exp_ptr = &expression;
+          std::cout << "Expression:" << expression << std::endl;
+          replaceVariables(exp_ptr, newx, newy);
+          std::cout << "New expression:" << expression << std::endl;
+          const char* myCharPtr = expression.c_str();
+          char* myMutableCharPtr = const_cast<char*>(myCharPtr);
+          double expression_z = input->variable->compute_equal(myMutableCharPtr);
+          putSphereOutsideSinusoidalRegion(&sphere_coord, atom->radius[i], expression_z);
           newz = sphere_coord[2];
         }
 
